@@ -1,38 +1,14 @@
+# main.py
 from fastapi import FastAPI, HTTPException, Query
 import httpx
 
-app = FastAPI(title="Weather API", description="Current weather by city using Open-Meteo")
+from config import GEOCODING_URL, WEATHER_URL, REQUIRED_METRICS, WMO_CODES
+from schemas import WeatherResponse, HealthResponse
 
-GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
-WEATHER_URL = "https://api.open-meteo.com/v1/forecast"
-
-# WMO Weather interpretation codes
-WMO_CODES = {
-    0: "Clear sky",
-    1: "Mainly clear",
-    2: "Partly cloudy",
-    3: "Overcast",
-    45: "Fog",
-    48: "Depositing rime fog",
-    51: "Light drizzle",
-    53: "Moderate drizzle",
-    55: "Dense drizzle",
-    61: "Slight rain",
-    63: "Moderate rain",
-    65: "Heavy rain",
-    71: "Slight snow fall",
-    73: "Moderate snow fall",
-    75: "Heavy snow fall",
-    77: "Snow grains",
-    80: "Slight rain showers",
-    81: "Moderate rain showers",
-    82: "Violent rain showers",
-    85: "Slight snow showers",
-    86: "Heavy snow showers",
-    95: "Thunderstorm",
-    96: "Thunderstorm with slight hail",
-    99: "Thunderstorm with heavy hail",
-}
+app = FastAPI(
+    title="Weather API", 
+    description="Current weather by city using Open-Meteo with async architecture"
+)
 
 
 async def geocode_city(city: str, client: httpx.AsyncClient) -> dict:
@@ -71,7 +47,7 @@ async def fetch_weather(latitude: float, longitude: float, client: httpx.AsyncCl
             params={
                 "latitude": latitude,
                 "longitude": longitude,
-                "current": "temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code",
+                "current": ",".join(REQUIRED_METRICS),
                 "wind_speed_unit": "kmh",
                 "timezone": "auto",
             },
@@ -86,25 +62,33 @@ async def fetch_weather(latitude: float, longitude: float, client: httpx.AsyncCl
     return response.json()
 
 
-@app.get("/weather")
+@app.get(
+    "/weather", 
+    response_model=WeatherResponse,
+    summary="Get current weather by city name"
+)
 async def get_weather(city: str = Query(..., description="City name to get weather for")):
     """
-    Returns current weather for the given city:
-    - **temperature**: °C
-    - **description**: human-readable weather condition
-    - **humidity**: relative humidity %
-    - **wind_speed**: km/h
+    Resolves the city name into coordinates and fetches the current weather data:
+    - **temperature_c**: Temperature in Celsius
+    - **humidity_percent**: Relative humidity %
+    - **wind_speed_kmh**: Wind speed in km/h
+    - **description**: Human-readable weather status derived from WMO code
     """
     async with httpx.AsyncClient() as client:
         location = await geocode_city(city, client)
         weather_data = await fetch_weather(location["latitude"], location["longitude"], client)
 
-    current = weather_data.get("current", {})
+    current = weather_data.get("current")
+    # Controllo di robustezza: se l'API di upstream risponde con un 200 ma omette le metriche correnti
+    if not current:
+        raise HTTPException(status_code=502, detail="Weather service returned a response missing 'current' conditions")
+
     weather_code = current.get("weather_code")
 
     return {
         "city": location["name"],
-        "country": location["country"],
+        "country": location.get("country"),
         "latitude": location["latitude"],
         "longitude": location["longitude"],
         "temperature_c": current.get("temperature_2m"),
@@ -116,6 +100,11 @@ async def get_weather(city: str = Query(..., description="City name to get weath
     }
 
 
-@app.get("/health")
+@app.get(
+    "/health", 
+    response_model=HealthResponse,
+    summary="Check API health status"
+)
 async def health():
+    """Returns the current status of the API for monitoring purposes."""
     return {"status": "ok"}
