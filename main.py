@@ -12,11 +12,11 @@ app = FastAPI(
 
 
 async def geocode_city(city: str, client: httpx.AsyncClient) -> dict:
-    """Resolve city name to coordinates using Open-Meteo geocoding."""
+    """Resolve city name to coordinates, prioritizing the most populated location."""
     try:
         response = await client.get(
             GEOCODING_URL,
-            params={"name": city, "count": 1, "language": "en", "format": "json"},
+            params={"name": city, "count": 10, "language": "en", "format": "json"},
             timeout=10.0,
         )
         response.raise_for_status()
@@ -30,7 +30,11 @@ async def geocode_city(city: str, client: httpx.AsyncClient) -> dict:
     if not results:
         raise HTTPException(status_code=404, detail=f"City '{city}' not found")
 
-    location = results[0]
+    # Ordiniamo la lista dei risultati in base alla popolazione (dal più grande al più piccolo)
+    # Usiamo 0 come fallback se il campo 'population' manca
+    results_sorted = sorted(results, key=lambda x: x.get("population", 0), reverse=True)
+    
+    location = results_sorted[0]
     return {
         "name": location.get("name"),
         "country": location.get("country"),
