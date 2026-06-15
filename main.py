@@ -12,10 +12,11 @@ app = FastAPI(
 
 
 async def geocode_city(city: str, client: httpx.AsyncClient) -> dict:
-    """Resolve city name to coordinates, prioritizing the most populated location."""
+    """Resolve city name to coordinates, prioritizing Italian locations."""
     try:
         response = await client.get(
             GEOCODING_URL,
+            # Chiediamo 10 risultati così abbiamo un buon margine di scelta
             params={"name": city, "count": 10, "language": "en", "format": "json"},
             timeout=10.0,
         )
@@ -30,11 +31,18 @@ async def geocode_city(city: str, client: httpx.AsyncClient) -> dict:
     if not results:
         raise HTTPException(status_code=404, detail=f"City '{city}' not found")
 
-    # Ordiniamo la lista dei risultati in base alla popolazione (dal più grande al più piccolo)
-    # Usiamo 0 come fallback se il campo 'population' manca
-    results_sorted = sorted(results, key=lambda x: x.get("population", 0), reverse=True)
-    
-    location = results_sorted[0]
+    # Cicliamo tra i 10 risultati per vedere se ce n'è uno in Italia
+    location = None
+    for res in results:
+        if res.get("country_code") == "IT":
+            location = res
+            break
+            
+    # Se NON trova nessuna corrispondenza in Italia (es. cerchi 'Paris'), 
+    # allora prende il primo risultato assoluto della lista
+    if not location:
+        location = results[0]
+
     return {
         "name": location.get("name"),
         "country": location.get("country"),
