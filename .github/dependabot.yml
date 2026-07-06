@@ -1,0 +1,13 @@
+version: 2
+updates:
+  # 1. Controlla gli aggiornamenti delle librerie Python
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "daily" # Controlla ogni giorno se ci sono aggiornamenti
+
+  # 2. Controlla le GitHub Actions (così tieni aggiornato anche il CodeQL di prima!)
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
