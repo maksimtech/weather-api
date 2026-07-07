@@ -4,6 +4,6 @@ httpx>=0.28.1
 pydantic>=2.0.0
 starlette>=0.40.0 # not directly required, pinned by Snyk to avoid a vulnerability
 h11>=0.16.0 # not directly required, pinned by Snyk to avoid a vulnerability
-anyio>=4.4.0 # not directly required, pinned by Snyk to avoid a vulnerability
+anyio>=4.14.1 # not directly required, pinned by Snyk to avoid a vulnerability
 zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
 idna>=3.18 # not directly required, pinned by Snyk to avoid a vulnerability
