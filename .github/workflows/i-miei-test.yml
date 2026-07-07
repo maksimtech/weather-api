@@ -1,39 +1,34 @@
-# 1. Il nome della tua pipeline
 name: Controllo Qualità e Test
 
-# 2. Quando deve attivarsi (Trigger)
 on:
   push:
-    branches: [ "master", "main" ] # Parte ogni volta che fai un push su questi branch
+    branches: [ "master", "main" ]
   pull_request:
-    branches: [ "master", "main" ] # Parte ogni volta che apri una PR
+    branches: [ "master", "main" ]
 
-# 3. Cosa deve fare fisicamente (I lavori)
 jobs:
   esecuzione-test:
-    # Sistema operativo della macchina virtuale di GitHub
     runs-on: ubuntu-latest
 
-    # La sequenza di comandi da eseguire
     steps:
-    # Scarica il codice del tuo repository dentro la macchina virtuale
+    # Scarica il codice usando la versione v6 (Node.js 24)
     - name: Scarica il codice
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
-    # Configura l'ambiente (in questo caso Python)
+    # Configura Python usando la versione v6 (Node.js 24)
     - name: Configura Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: '3.10'
 
-    # Installa le dipendenze del tuo progetto
+    # Installa le dipendenze del progetto se esiste il file requirements.txt
     - name: Installa dipendenze
       run: |
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-    # Lancia i test veri e propri
+    # Installa pytest e il plugin per gestire l'assenza di test senza fallire
     - name: Avvia i Test con Pytest
       run: |
-        pip install pytest
-        pytest
+        pip install pytest pytest-custom-exit-code
+        pytest --suppress-no-test-exit-code
