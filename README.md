@@ -1,3 +1,7 @@
+Weather API
+
+[![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://app.codspeed.io/maksimtech/weather-api?utm_source=badge)
+
 Requirements
 
     Python 3.10+
@@ -21,6 +25,19 @@ Bash
 uvicorn main:app --reload
 
 The API will be available at http://localhost:8000.
+Benchmarks
+Bash
+
+# Install the development dependencies (includes pytest and pytest-codspeed)
+pip install -r requirements-dev.txt
+
+# Run the benchmark suite
+pytest benchmarks/ --codspeed
+
+The benchmarks live in benchmarks/ and never hit the network: the Open-Meteo
+endpoints are served by an in-process httpx mock transport. They are executed on
+every push and pull request by the CodSpeed workflow, which tracks the
+performance of the API over time.
 Endpoints
 GET /weather?city={city}
 
