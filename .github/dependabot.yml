@@ -5,9 +5,22 @@ updates:
     directory: "/"
     schedule:
       interval: "daily" # Controlla ogni giorno se ci sono aggiornamenti
+    # Propone una release solo dopo 14 giorni dall'uscita;
+    # gli aggiornamenti di sicurezza di Dependabot non aspettano.
+    cooldown:
+      default-days: 14
 
   # 2. Controlla le GitHub Actions (così tieni aggiornato anche il CodeQL di prima!)
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    # Propone una release solo dopo 14 giorni dall'uscita;
+    # gli aggiornamenti di sicurezza di Dependabot non aspettano.
+    cooldown:
+      default-days: 14
+    # Tutte le Actions in una sola PR a settimana, non una per Action.
+    groups:
+      github-actions:
+        patterns:
+          - "*"
